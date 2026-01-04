@@ -35,6 +35,7 @@ type SettingsRec = {
     autoHide: bool
     enableShiftScroll: bool
     alignment: string
+    crossAppGroupKeys: Map2<string,string>
     }
 
 type ILicenseManager =
@@ -92,6 +93,8 @@ type IProgram =
     abstract member appWindows : List2<IntPtr>
     abstract member getAutoGroupingEnabled : string -> bool
     abstract member setAutoGroupingEnabled : string -> bool -> unit
+    abstract member getCrossAppGroupKey : string -> string option
+    abstract member setCrossAppGroupKey : string -> string option -> unit
     abstract member tabAppearanceInfo : TabAppearanceInfo
     abstract member defaultTabAppearanceInfo : TabAppearanceInfo
     abstract member darkModeTabAppearanceInfo : TabAppearanceInfo

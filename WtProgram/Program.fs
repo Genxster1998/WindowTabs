@@ -140,7 +140,20 @@ type Program() as this =
                 | Some(tabLimit) -> groups.where(fun g -> g.windows.count < tabLimit)
                 | None -> groups
             let groups = groups.where(fun g-> g.windows.count > 0).sortBy(fun g -> g.windows.map(fun hwnd -> hwndZorders.tryFind(hwnd).def(Int32.MaxValue)).minBy(id))
-            let group = groups.tryFind(fun g -> g.windows.map(fun hwnd -> os.windowFromHwnd(hwnd).pid.processPath).contains((=) window.pid.processPath))
+            
+            // First try to match by cross-app group key
+            let windowGroupKey = (this :> IProgram).getCrossAppGroupKey(window.pid.processPath)
+            let group = 
+                match windowGroupKey with
+                | Some(key) ->
+                    // Find group with any window that has the same group key
+                    groups.tryFind(fun g -> 
+                        g.windows.any(fun hwnd -> 
+                            let otherPath = os.windowFromHwnd(hwnd).pid.processPath
+                            (this :> IProgram).getCrossAppGroupKey(otherPath) = Some(key)))
+                | None ->
+                    // Fall back to same process path matching
+                    groups.tryFind(fun g -> g.windows.map(fun hwnd -> os.windowFromHwnd(hwnd).pid.processPath).contains((=) window.pid.processPath))
             Some(group)
         else None
 
@@ -311,6 +324,21 @@ type Program() as this =
                 this.refresh()
             else
                 this.saveSettingsAndUpdateAppWindows <| fun s -> { s with autoGroupingPaths = s.autoGroupingPaths.remove procPath }
+
+        member x.getCrossAppGroupKey procPath =
+            settingsManager.settings.crossAppGroupKeys.tryFind(procPath)
+
+        member x.setCrossAppGroupKey procPath keyOpt =
+            match keyOpt with
+            | Some(key) when key <> "" -> 
+                this.saveSettingsAndUpdateAppWindows <| fun s -> { s with crossAppGroupKeys = s.crossAppGroupKeys.add procPath key }
+                // Toggle tabbing to force regrouping
+                Services.filter.setIsTabbingEnabledForProcess procPath false
+                this.refresh()
+                Services.filter.setIsTabbingEnabledForProcess procPath true
+                this.refresh()
+            | _ -> 
+                this.saveSettingsAndUpdateAppWindows <| fun s -> { s with crossAppGroupKeys = s.crossAppGroupKeys.remove procPath }
   
         member x.tabAppearanceInfo = 
             settingsManager.settings.tabAppearance

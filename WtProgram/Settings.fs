@@ -134,6 +134,11 @@ type Settings(isStandAlone) as this =
                         enableShiftScroll = settingsJson.getBool("enableShiftScroll").def(true)
                         version = settingsJson.getString("version").def(String.Empty)
                         alignment = settingsJson.getString("alignment").def("Center")
+                        crossAppGroupKeys = 
+                            let obj = settingsJson.getObject("crossAppGroupKeys").def(JObject())
+                            obj.items.fold (Map2()) <| fun map (key, value) ->
+                                try map.add key ((value :?> JValue).Value.ToString())
+                                with _ -> map
                         tabAppearance =
                             let appearanceObject = settingsJson.getObject("tabAppearance").def(JObject())
                             appearanceObject.items.fold this.defaultTabAppearance <| fun appearance (key,value) ->
@@ -182,6 +187,9 @@ type Settings(isStandAlone) as this =
             settingsJson.setStringArray("includedPaths", settings.includedPaths.items)
             settingsJson.setStringArray("excludedPaths", settings.excludedPaths.items)
             settingsJson.setStringArray("autoGroupingPaths", settings.autoGroupingPaths.items)
+            let groupKeysObj = JObject()
+            settings.crossAppGroupKeys.items.iter <| fun (path, key) -> groupKeysObj.setString(path, key)
+            settingsJson.setObject("crossAppGroupKeys", groupKeysObj)
             let appearanceObject =
                 let appearance = settings.tabAppearance
                 let obj = JObject()

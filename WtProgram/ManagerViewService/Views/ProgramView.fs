@@ -26,6 +26,7 @@ type ExeNode(procPath) =
         ImgHelper.imgFromIcon (Ico.fromHandle(procIcon).def(System.Drawing.SystemIcons.Application))
     let mutable _enableTabs = Services.filter.getIsTabbingEnabledForProcess(procPath)
     let mutable _enableAutoGrouping = Services.program.getAutoGroupingEnabled(procPath)
+    let mutable _groupKey = Services.program.getCrossAppGroupKey(procPath).def("")
     member this.Icon with get() = icon 
     member this.enableTabs 
         with get() = _enableTabs 
@@ -37,6 +38,12 @@ type ExeNode(procPath) =
         and set(newValue) =
             _enableAutoGrouping <- newValue
             Services.program.setAutoGroupingEnabled procPath _enableAutoGrouping
+    member this.groupKey
+        with get() = _groupKey
+        and set(newValue) =
+            _groupKey <- newValue
+            let keyOpt = if newValue = "" then None else Some(newValue)
+            Services.program.setCrossAppGroupKey procPath keyOpt
            
     interface INode with
         member x.showSettings = true
@@ -96,6 +103,19 @@ type ProgramView() as this=
                 control)
         addCheckBoxColumn "Tabs" "enableTabs"
         addCheckBoxColumn "Auto Grouping" "enableAutoGrouping"
+        // Add Group Key text column
+        let groupKeyColumn = TreeColumn("Group Key", 100)
+        tree.Columns.Add(groupKeyColumn)
+        tree.NodeControls.Add(
+            let control = NodeControls.NodeTextBox()
+            control.ParentColumn <- groupKeyColumn
+            control.DataPropertyName <- "groupKey"
+            control.EditEnabled <- true
+            control.IsVisibleValueNeeded.Add <| fun e ->
+                let node = tree.GetPath(e.Node).LastNode :?> INode
+                e.Value <- node.showSettings
+            control.LeftMargin <- 5
+            control)
         tree.NodeControls.Add(
             let control = NodeControls.NodeIcon()
             control.ParentColumn <- nameColumn
