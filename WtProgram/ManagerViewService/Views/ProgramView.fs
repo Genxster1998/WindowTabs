@@ -74,7 +74,7 @@ type ProgramView() as this=
         let nameColumn = TreeColumn(resources.GetString("Name"), 200)
         tree.UseColumns <- true
         tree.Columns.Add(nameColumn)
-        tree.RowHeight <- 24
+        tree.RowHeight <- DpiHelper.scaleSystemSize 24
         tree.Font <- font
         tree.BorderStyle <- BorderStyle.None
         let addCheckBoxColumn colText propName =

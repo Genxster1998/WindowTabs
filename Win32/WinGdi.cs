@@ -154,6 +154,8 @@ namespace Bemo
 		public static extern uint GetLayout(IntPtr hdc);
         [DllImport("gdi32.dll")]
         public static extern IntPtr GetStockObject(int fnObject);
+        [DllImport("gdi32.dll")]
+        public static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
         [DllImport("gdi32.dll", CharSet = CharSet.Auto)]
         public static extern bool TextOut(IntPtr hdc, int nXStart, int nYStart, String s, int cbString);
 	}

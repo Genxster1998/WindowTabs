@@ -9,7 +9,7 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>WindowTabs</RootNamespace>
     <AssemblyName>WindowTabs</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <Name>WtProgram</Name>
     <TargetFrameworkProfile />
     <SccProjectName>&lt;Project Location In Database&gt;</SccProjectName>
@@ -17,7 +17,7 @@
     <SccAuxPath>&lt;Source Control Database&gt;</SccAuxPath>
     <SccLocalPath>&lt;Local Binding Root of Project&gt;</SccLocalPath>
     <Win32Resource>.\app.res</Win32Resource>
-    <TargetFSharpCoreVersion>2.3.0.0</TargetFSharpCoreVersion>
+    <TargetFSharpCoreVersion>4.3.0.0</TargetFSharpCoreVersion>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -80,6 +80,7 @@
     <Compile Include="Shared/Drawing.fs" />
     <Compile Include="Shared/Sprite.fs" />
     <Compile Include="Shared\TabStripTypes.fs" />
+    <Compile Include="Shared/DpiHelper.fs" />
     <Compile Include="Shared/Win32.fs" />
     <Compile Include="Shared\ProgramTypes.fs" />
     <Compile Include="Shared/DragDrop.fs" />

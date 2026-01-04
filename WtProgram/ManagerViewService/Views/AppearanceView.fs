@@ -103,6 +103,7 @@ type AppearanceView() as this =
         container.Anchor <- AnchorStyles.Right
 
         let resetBtn = Button()
+        resetBtn.AutoSize <- true
         resetBtn.Text <- resources.GetString("Reset")
         resetBtn.Font <- font
         resetBtn.Click.Add <| fun _ ->
@@ -111,6 +112,7 @@ type AppearanceView() as this =
             this.applyAppearance()
         
         let darkBtn = Button()
+        darkBtn.AutoSize <- true
         darkBtn.Text <- resources.GetString("DarkMode")
         darkBtn.Font <- font
         darkBtn.Click.Add <| fun _ ->

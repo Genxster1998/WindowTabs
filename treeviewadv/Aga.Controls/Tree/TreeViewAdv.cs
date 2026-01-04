@@ -211,11 +211,13 @@ namespace Aga.Controls.Tree
 				| ControlStyles.Selectable
 				, true);
 
-
-			if (Application.RenderWithVisualStyles)
-				_columnHeaderHeight = 20;
-			else
-				_columnHeaderHeight = 17;
+			// Scale header height for HiDPI
+			int baseHeaderHeight = Application.RenderWithVisualStyles ? 24 : 20;
+			using (var g = Graphics.FromHwnd(IntPtr.Zero))
+			{
+				float dpiScale = g.DpiX / 96f;
+				_columnHeaderHeight = (int)(baseHeaderHeight * dpiScale + 0.5f);
+			}
 
 			//BorderStyle = BorderStyle.Fixed3D;
 			_hScrollBar.Height = SystemInformation.HorizontalScrollBarHeight;

@@ -94,6 +94,7 @@ type TabStrip(monitor:ITabStripMonitor) as this =
     member private this.showInside = showInsideCell.value
 
     member private this.tsBase direction =
+        let scaleFactor = DpiHelper.getScaleFactor(this.hwnd)
         {
             tabs = Map2(this.tabs.items.map <| fun tab ->
                 let ti = this.tabInfo(tab)
@@ -118,9 +119,11 @@ type TabStrip(monitor:ITabStripMonitor) as this =
             alignment = alignment.value.find direction
             onlyIcons = this.isIconOnly
             transparent = this.transparent
+            scaleFactor = scaleFactor
             appearance = 
                 if this.isIconOnly then
-                    { this.appearance with tabMaxWidth = 50 }
+                    let scaledIconOnlyWidth = int (50.0 * scaleFactor + 0.5)
+                    { this.appearance with tabMaxWidth = scaledIconOnlyWidth }
                 else
                     this.appearance
         }

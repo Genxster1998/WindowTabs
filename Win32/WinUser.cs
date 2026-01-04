@@ -2816,14 +2816,60 @@ namespace Bemo
             return pt;
         }
         delegate bool SetProcessDPIAwareDelegate();
+
+        // DPI_AWARENESS_CONTEXT values for SetProcessDpiAwarenessContext
+        private static readonly IntPtr DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = new IntPtr(-4);
+        private static readonly IntPtr DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE = new IntPtr(-3);
+        private static readonly IntPtr DPI_AWARENESS_CONTEXT_SYSTEM_AWARE = new IntPtr(-2);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetProcessDpiAwarenessContext(IntPtr value);
+
+        [DllImport("shcore.dll", SetLastError = true)]
+        private static extern int SetProcessDpiAwareness(int awareness);
+
+        /// <summary>
+        /// Enable Per-Monitor DPI awareness for the application.
+        /// Tries modern APIs first, falls back to older ones.
+        /// </summary>
         public static void SetProcessDPIAware()
         {
-            IntPtr functionPtr = WinBaseApi.GetProcAddress(WinBaseApi.GetModuleHandle("user32.dll"), "SetProcessDPIAware");
-            if (functionPtr != IntPtr.Zero)
+            try
             {
-                SetProcessDPIAwareDelegate del = (SetProcessDPIAwareDelegate)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(SetProcessDPIAwareDelegate));
-                del();
+                // Try Per-Monitor V2 first (Windows 10 1703+)
+                if (SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2))
+                    return;
             }
+            catch { }
+
+            try
+            {
+                // Try Per-Monitor V1 (Windows 10 1607+)
+                if (SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE))
+                    return;
+            }
+            catch { }
+
+            try
+            {
+                // Try SetProcessDpiAwareness (Windows 8.1+)
+                // 2 = PROCESS_PER_MONITOR_DPI_AWARE
+                if (SetProcessDpiAwareness(2) == 0)
+                    return;
+            }
+            catch { }
+
+            try
+            {
+                // Fallback to legacy SetProcessDPIAware (Vista+)
+                IntPtr functionPtr = WinBaseApi.GetProcAddress(WinBaseApi.GetModuleHandle("user32.dll"), "SetProcessDPIAware");
+                if (functionPtr != IntPtr.Zero)
+                {
+                    SetProcessDPIAwareDelegate del = (SetProcessDPIAwareDelegate)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(SetProcessDPIAwareDelegate));
+                    del();
+                }
+            }
+            catch { }
         }
         [DllImport("user32.dll", CharSet=CharSet.Auto)]
 		public static extern bool ScrollWindow(IntPtr hWnd, int nXAmount, int nYAmount, ref RECT rectScrollRegion, ref RECT rectClip);
@@ -3074,5 +3120,51 @@ namespace Bemo
         public static extern int MapVirtualKey(int uCode,int uMapType);
         [DllImport("user32.dll", SetLastError = true)]
         public static extern bool FlashWindowEx(ref FLASHWINFO pwfi);
+
+        // DPI Awareness APIs (Windows 10 1607+)
+        [DllImport("user32.dll")]
+        public static extern int GetDpiForWindow(IntPtr hwnd);
+
+        [DllImport("user32.dll")]
+        public static extern int GetDpiForSystem();
+
+        // Shcore DPI APIs (Windows 8.1+)
+        public const int MDT_EFFECTIVE_DPI = 0;
+        public const int MDT_ANGULAR_DPI = 1;
+        public const int MDT_RAW_DPI = 2;
+
+        [DllImport("shcore.dll")]
+        public static extern int GetDpiForMonitor(IntPtr hMonitor, int dpiType, out int dpiX, out int dpiY);
+
+        // Safe wrapper that falls back to 96 DPI if the API isn't available
+        public static int GetDpiForWindowSafe(IntPtr hwnd)
+        {
+            try
+            {
+                int dpi = GetDpiForWindow(hwnd);
+                return dpi > 0 ? dpi : 96;
+            }
+            catch
+            {
+                return 96;
+            }
+        }
+
+        public static int GetSystemDpiSafe()
+        {
+            try
+            {
+                int dpi = GetDpiForSystem();
+                return dpi > 0 ? dpi : 96;
+            }
+            catch
+            {
+                // Fallback for older Windows: use GDI
+                IntPtr hdc = GetDC(IntPtr.Zero);
+                int dpi = WinGdiApi.GetDeviceCaps(hdc, 88); // LOGPIXELSX = 88
+                ReleaseDC(IntPtr.Zero, hdc);
+                return dpi > 0 ? dpi : 96;
+            }
+        }
     }
 }

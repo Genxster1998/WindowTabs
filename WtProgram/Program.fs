@@ -375,6 +375,9 @@ type Program() as this =
             | :? IDisposable as d -> d.Dispose()
             | _ -> ()
 
+// Enable Per-Monitor DPI awareness (must be called before any UI)
+WinUserApi.SetProcessDPIAware()
+
 Application.SetCompatibleTextRenderingDefault(false)
 let program = Program()
 program.run(List2<obj>([

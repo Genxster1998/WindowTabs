@@ -23,6 +23,7 @@ type CloseButtonSprite = {
     hover: bool
     captured: bool
     size: Sz
+    scaleFactor: float
     }
     with
     member private this.bgColor =
@@ -31,10 +32,12 @@ type CloseButtonSprite = {
         | true, false -> Some(Color.DarkRed)
         | _ -> None
     member private this.penColor = if this.bgColor.IsSome then Color.White else Color.Gray
-    member private this.pen = new Pen(this.penColor, 2.0f)
+    member private this.scaledPenWidth = float32 (2.0 * this.scaleFactor)
+    member private this.pen = new Pen(this.penColor, this.scaledPenWidth)
+    member private this.scaledCrossOffset = int (3.0 * this.scaleFactor + 0.5)
     interface ISprite with
         member this.image = 
-            let crossOffest = 3
+            let crossOffest = this.scaledCrossOffset
             let bitmap = Img(this.size)
             let g = bitmap.graphics
             g.FillEllipse(new SolidBrush(this.bgColor.def(Color.FromArgb(1, 1, 1, 1))), Rect(Pt.empty, this.size).Rectangle)
@@ -61,7 +64,14 @@ type TabSprite<'id> = {
     direction: TabDirection
     hover: TabPart option
     captured: TabPart option
+    scaleFactor: float
     } with
+
+    // Scaled constants for HiDPI support
+    member private this.baseIconSize = 16
+    member private this.baseCloseButtonSize = 13
+    member private this.baseEdgeWidth = 18
+    member private this.baseTextSpacing = 5
 
     member private this.iconSprite =
         {
@@ -74,9 +84,10 @@ type TabSprite<'id> = {
             CloseButtonSprite.size = this.closeButtonSize
             hover = this.hover = Some(TabClose)
             captured = this.captured = Some(TabClose)
+            scaleFactor = this.scaleFactor
         } :> ISprite
        
-    member private this.edgeWidth = 18
+    member private this.edgeWidth = int (float this.baseEdgeWidth * this.scaleFactor + 0.5)
 
     member private this.renderTabEdge(path:GraphicsPath, startPoint:PointF, endPoint:PointF) =
         let width = endPoint.X - startPoint.X
@@ -117,7 +128,8 @@ type TabSprite<'id> = {
                 else inactive
         SolidBrush(color)
 
-    member private this.borderPen = new Pen(new SolidBrush(this.appearance.tabBorderColor), 1.0f)
+    member private this.scaledBorderPenWidth = float32 (1.0 * this.scaleFactor)
+    member private this.borderPen = new Pen(new SolidBrush(this.appearance.tabBorderColor), this.scaledBorderPenWidth)
 
     member private this.borderPath =
         let path = new GraphicsPath()
@@ -130,13 +142,17 @@ type TabSprite<'id> = {
         do this.renderTabEdge(path, PointF(float32(this.size.width) - float32(this.edgeWidth), top), PointF(float32(this.size.width), bottom))
         path
 
-    member private this.iconSize = Sz(16, 16)
+    member private this.iconSize = 
+        let scaled = int (float this.baseIconSize * this.scaleFactor + 0.5)
+        Sz(scaled, scaled)
 
     member private this.iconLocation =
-        let y = (this.size.height - 16) / 2
+        let y = (this.size.height - this.iconSize.height) / 2
         Pt(this.edgeWidth, y)
 
-    member private this.closeButtonSize = Sz(13, 13)
+    member private this.closeButtonSize = 
+        let scaled = int (float this.baseCloseButtonSize * this.scaleFactor + 0.5)
+        Sz(scaled, scaled)
 
     member private this.closeButtonLocation =
         let x = this.size.width - this.edgeWidth - this.closeButtonSize.width
@@ -144,7 +160,8 @@ type TabSprite<'id> = {
         Pt(x, y)
 
     member this.textLocation =
-        let x = this.iconLocation.x + this.iconSize.width + 5
+        let textSpacing = int (float this.baseTextSpacing * this.scaleFactor + 0.5)
+        let x = this.iconLocation.x + this.iconSize.width + textSpacing
         Pt(x, 0)
 
     member this.textSize =
@@ -194,6 +211,7 @@ type TabStripSprite<'id> when 'id : equality = {
     direction: TabDirection
     transparent: bool
     onlyIcons: bool
+    scaleFactor: float
     } with
 
     member private this.tabOverlap = float(this.appearance.tabOverlap)
@@ -219,6 +237,7 @@ type TabStripSprite<'id> when 'id : equality = {
                 match this.captured with
                 | Some(id, part) when id = tab -> Some(part)
                 | _ -> None
+            scaleFactor = this.scaleFactor
         } :> ISprite
 
     member private this.count = this.lorder.length
